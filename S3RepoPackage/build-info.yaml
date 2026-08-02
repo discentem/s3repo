@@ -1,0 +1,8 @@
+name: S3RepoPlugin.pkg
+identifier: com.discentem.s3repo
+version: 1.0.0
+title: Munki S3 Repository Plugin
+description: S3 and S3-compatible repository plugin for Munki package management
+install_location: /
+distribution_style: true
+ownership: recommended

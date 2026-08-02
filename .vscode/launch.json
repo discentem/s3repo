@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:s3Repo}",
+            "name": "Debug MunkiRepoInit",
+            "target": "MunkiRepoInit",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug MunkiRepoInit"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:s3Repo}",
+            "name": "Release MunkiRepoInit",
+            "target": "MunkiRepoInit",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release MunkiRepoInit"
+        }
+    ]
+}

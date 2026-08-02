@@ -1,0 +1,8 @@
+#!/bin/bash
+# Post-installation script for Munki S3 Repository Plugin
+
+# Ensure correct permissions on the plugin directory
+chmod 755 /usr/local/munki/repoplugins
+chmod 755 /usr/local/munki/repoplugins/libS3Repo.dylib
+
+echo "Munki S3 repository plugin installed successfully to /usr/local/munki/repoplugins/"

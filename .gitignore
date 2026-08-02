@@ -1,0 +1,6 @@
+.build
+.build/repositories
+S3RepoPackage/payload/usr/local/munki/repoplugins/*
+!S3RepoPackage/payload/usr/local/munki/repoplugins/.gitkeep
+S3RepoPackage/build/**
+S3Repo*.pkg
