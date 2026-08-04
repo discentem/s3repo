@@ -12,10 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # v4
 
-      # Note: actions/cache's save step only runs when the job succeeds
-      # (post-if: success()), so the cache won't populate until a full green run.
-      - name: Cache SwiftPM dependencies
-        uses: actions/cache@v6
+      # Split restore/save (rather than the combined action) so save can run
+      # right after the build step, regardless of later step failures - the
+      # combined action's save only runs when the whole job succeeds (post-if: success()).
+      - name: Restore SwiftPM dependencies
+        id: cache-spm
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
@@ -41,6 +43,13 @@ jobs:
       - name: Build S3Repo plugin package
         run: |
           ./scripts/build-plugin-package.sh
+
+      - name: Save SwiftPM dependencies
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: .build
+          key: ${{ steps.cache-spm.outputs.cache-primary-key }}
 
       - name: Install S3Repo Munki repo plugin package
         run: |
