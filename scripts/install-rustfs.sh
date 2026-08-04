@@ -7,7 +7,7 @@ set -e
 
 # Pinned release with SHA256 hash for verification
 RUSTFS_VERSION="1.0.0-beta.12"
-RUSTFS_BINARY_SHA256="0f9dedc7c606fe133ed33cc27464cc64705544e4e1360673f4c5e8a78e931bce"
+RUSTFS_BINARY_SHA256="f5266eda245fa4dab5acf28bef7bbab6c1da7f3e9575ddc7db803894107e09f5"
 
 INSTALL_DIR="${1:-/usr/local/bin}"
 INSTALL=false
