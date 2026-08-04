@@ -11,54 +11,81 @@ This project includes an automated testing pipeline that handles building, packa
 Run the full test suite:
 
 ```shell
-# Keep rustfs running after tests (useful for debugging)
-sh scripts/run-full-test.sh true /path/to/test-app.dmg
-
-# Or without keeping rustfs alive
-sh scripts/run-full-test.sh false /path/to/test-app.dmg
+sh scripts/run-full-test.sh
 ```
 
 This wrapper script:
 1. Builds the plugin from source
 2. Packages it as a .pkg installer
 3. Installs it system-wide
-4. Runs end-to-end tests with `munkiimport` using a local rustfs S3-compatible server
-5. Cleans up resources (unless you specify to keep rustfs alive)
+4. Builds the MunkiRepoInit tool
+5. Starts a rustfs S3-compatible server
+6. Creates the munki-repo S3 bucket
+7. Runs end-to-end tests with `munkiimport` testing the built S3RepoPlugin.pkg
+8. Cleans up resources
 
-For more details, see:
-- [`scripts/run-full-test.sh`](scripts/run-full-test.sh) - Main test orchestrator
-- [`scripts/test_munkiimport.sh`](scripts/test_munkiimport.sh) - Individual test runner with timeout and logging
-- [`scripts/build-plugin-package.sh`](scripts/build-plugin-package.sh) - Plugin build and packaging
-- [`scripts/install-plugin-package.sh`](scripts/install-plugin-package.sh) - Plugin installation
+For more details on individual scripts, see below.
 
-### Manual testing
+### Testing individual components
 
-For manual testing without the automated wrapper:
+**Build S3Repo plugin package:**
+```shell
+sh scripts/build-plugin-package.sh
+```
 
-1. Either create a real S3 bucket or run a S3-compatible service and create a bucket there. Note down the access key and secret key that you set.
+**Build MunkiRepoInit tool (required for bucket creation):**
+```shell
+sh scripts/build-munki-repo-init.sh
+```
 
-    For example, with Rustfs:
+**Start rustfs server:**
+```shell
+# Start server with default settings
+RUSTFS_PID=$(sh scripts/start-rustfs.sh)
 
-    ```shell
-    rustfs server ~/rustfs-buckets --console-enable --access-key="blah" --secret-key="blah"
-    ```
+# With custom settings
+RUSTFS_PID=$(sh scripts/start-rustfs.sh --dir /tmp/s3 --port 9000)
 
-1. Create a Munki repo. For convenience this project provides a command-line tool that can set up a basic Munki repository for you. 
+# Clean up
+kill $RUSTFS_PID
+```
 
-    If you are using rustfs or a similiar S3-compatible service:
+**Create S3 bucket:**
+```shell
+# Create bucket with defaults
+sh scripts/create-s3-bucket.sh
 
-    ```
-    AWS_ACCESS_KEY_ID="blah" && AWS_SECRET_ACCESS_KEY="blah" && swift run MunkiRepoInit --endpoint http://localhost:9000 munki-repo
-    ```
+# With custom settings
+sh scripts/create-s3-bucket.sh --bucket my-repo --endpoint http://localhost:9000
+```
 
-    If you are using real s3:
+**Run munkiimport test:**
+```shell
+# Test the built S3RepoPlugin.pkg (default)
+sh scripts/test_munkiimport.sh
 
-    ```
-    AWS_ACCESS_KEY_ID="blah" AWS_SECRET_ACCESS_KEY="blah" swift run MunkiRepoInit munki-repo
-    ```
-1. Download a package that you want to import into Munki, such as [Ghostty](https://release.files.ghostty.org/1.3.1/Ghostty.dmg).
+# With custom application/package
+sh scripts/test_munkiimport.sh --app /path/to/test-app.dmg
 
-1. Install the [latest Munkitools](https://github.com/munki/munki/releases/).
+# With custom repo URL
+sh scripts/test_munkiimport.sh --repo-url http://localhost:9000/my-repo
+```
+
+### GitHub Actions CI/CD
+
+This project includes a GitHub Actions workflow that runs automated tests on push and pull requests. The workflow runs on macOS and includes the following stages:
+
+- Install munkitools
+- Install rustfs
+- Build S3Repo plugin package
+- Build MunkiRepoInit tool
+- Install S3Repo plugin package
+- Start rustfs S3 server
+- Create S3 bucket
+- Run munkiimport end-to-end test (tests S3RepoPlugin.pkg)
+- Cleanup
+
+See [.github/workflows/test.yml](.github/workflows/test.yml) for the full workflow definition.
 
 ## How are repo plugins different than Munki Middleware? 
 

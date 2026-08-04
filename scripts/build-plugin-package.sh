@@ -37,9 +37,9 @@ PROJECT_ROOT=$(dirname "$THISDIR")
 
 echo "Building ${TOOL} plugin..."
 
-# Build the library
+# Build only the S3Repo product (not MunkiRepoInit)
 cd "$PROJECT_ROOT"
-swift build -c release
+swift build -c release --product S3Repo
 check_exit_code "$?" "Error building ${TOOL}"
 
 # Find the built product and copy to payload

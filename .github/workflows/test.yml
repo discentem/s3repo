@@ -1,0 +1,61 @@
+name: Build and test S3Repo Munki plugin
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652a34574319c12dd29  # v4.1.7
+
+      - name: Install munkitools
+        run: |
+          ./scripts/install-munkitools.sh --install
+
+      - name: Install rustfs
+        run: |
+          ./scripts/install-rustfs.sh --install
+
+      - name: Build S3Repo plugin package
+        run: |
+          ./scripts/build-plugin-package.sh
+
+      - name: Build MunkiRepoInit tool
+        run: |
+          ./scripts/build-munki-repo-init.sh
+
+      - name: Install S3Repo Munki repo plugin package
+        run: |
+          sudo ./scripts/install-plugin-package.sh
+
+      - name: Start rustfs S3 server
+        run: |
+          RUSTFS_PID=$(./scripts/start-rustfs.sh)
+          echo "RUSTFS_PID=$RUSTFS_PID" >> $GITHUB_ENV
+          # Give the server time to stabilize
+          sleep 2
+
+      - name: Create S3 bucket for munki repository
+        run: |
+          ./scripts/create-s3-bucket.sh \
+            --bucket "munki-repo" \
+            --endpoint "http://localhost:9000" \
+            --region "us-east-1"
+
+      - name: Run munkiimport end-to-end test
+        run: |
+          ./scripts/test_munkiimport.sh \
+            --repo-url "http://localhost:9000/munki-repo" \
+            --plugin "S3Repo"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -n "$RUSTFS_PID" ]; then
+            kill $RUSTFS_PID 2>/dev/null || true
+            wait $RUSTFS_PID 2>/dev/null || true
+          fi

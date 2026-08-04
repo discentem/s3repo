@@ -1,16 +1,34 @@
 #!/bin/bash
 # Download and install rustfs (S3-compatible server)
 # GitHub: https://github.com/welpo/rustfs
-# Note: rustfs binaries are distributed unsigned; we verify via SHA256
+# Pinned to: v1.0.0-beta.12 macOS aarch64 binary
 
 set -e
 
-# Known good SHA256 hash for rustfs v1.0.0-beta.12 macOS aarch64 binary
-# Source: https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.12/SHA256SUMS
-RUSTFS_SHA256="f5266eda245fa4dab5acf28bef7bbab6c1da7f3e9575ddc7db803894107e09f5"
+# Pinned release with SHA256 hash for verification
+RUSTFS_VERSION="1.0.0-beta.12"
+RUSTFS_BINARY_SHA256="f5266eda245fa4dab5acf28bef7bbab6c1da7f3e9575ddc7db803894107e09f5"
 
 INSTALL_DIR="${1:-/usr/local/bin}"
 INSTALL=false
+
+# Verify rustfs binary hash
+verify_rustfs_binary() {
+    local binary_path="$1"
+    if [ ! -f "$binary_path" ]; then
+        echo "❌ Error: rustfs binary not found at $binary_path"
+        return 1
+    fi
+    
+    local binary_sha=$(sha256sum "$binary_path" | awk '{print $1}')
+    if [ "$binary_sha" != "$RUSTFS_BINARY_SHA256" ]; then
+        echo "❌ ERROR: Binary SHA256 does not match pinned hash"
+        echo "   Got:      $binary_sha"
+        echo "   Expected: $RUSTFS_BINARY_SHA256"
+        return 1
+    fi
+    return 0
+}
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -41,19 +59,27 @@ done
 
 # Check if rustfs is already installed
 if command -v rustfs &> /dev/null; then
-    INSTALLED_VERSION=$(rustfs --version 2>/dev/null || echo "unknown")
-    echo "✓ rustfs is already installed: $INSTALLED_VERSION"
-    exit 0
+    RUSTFS_BIN=$(command -v rustfs)
+    echo "Found rustfs at: $RUSTFS_BIN"
+    
+    echo "Verifying rustfs binary hash..."
+    if verify_rustfs_binary "$RUSTFS_BIN"; then
+        INSTALLED_VERSION=$(rustfs --version 2>/dev/null || echo "unknown")
+        echo "✓ rustfs is already installed and verified: $INSTALLED_VERSION"
+        exit 0
+    else
+        echo "❌ ERROR: Installed rustfs binary failed verification"
+        exit 1
+    fi
 fi
 
 echo "Checking for rustfs availability..."
 
-# Download macOS aarch64 binary from GitHub releases
-RELEASE_TAG="1.0.0-beta.12"
+# Download macOS aarch64 binary from GitHub releases (pinned version)
 ARCH_PATTERN="macos-aarch64"
-DOWNLOAD_URL="https://github.com/rustfs/rustfs/releases/download/$RELEASE_TAG/rustfs-${ARCH_PATTERN}-v${RELEASE_TAG}.zip"
+DOWNLOAD_URL="https://github.com/rustfs/rustfs/releases/download/${RUSTFS_VERSION}/rustfs-${ARCH_PATTERN}-v${RUSTFS_VERSION}.zip"
 
-echo "Found rustfs release: $RELEASE_TAG"
+echo "Found rustfs release: $RUSTFS_VERSION"
 echo "Download URL: $DOWNLOAD_URL"
 
 if [ "$INSTALL" = false ]; then
@@ -79,6 +105,16 @@ if ! curl -L -o "$TEMP_DIR/rustfs.zip" "$DOWNLOAD_URL"; then
     exit 1
 fi
 
+echo "Verifying download integrity..."
+DOWNLOADED_SHA=$(sha256sum "$TEMP_DIR/rustfs.zip" | awk '{print $1}')
+if [ "$DOWNLOADED_SHA" != "$RUSTFS_BINARY_SHA256" ]; then
+    echo "❌ ERROR: Downloaded file SHA256 does not match pinned hash"
+    echo "   Downloaded: $DOWNLOADED_SHA"
+    echo "   Expected:   $RUSTFS_BINARY_SHA256"
+    exit 1
+fi
+echo "✓ Download integrity verified"
+
 echo "Extracting rustfs..."
 unzip -q "$TEMP_DIR/rustfs.zip" -d "$TEMP_DIR"
 
@@ -90,54 +126,12 @@ if [ -z "$RUSTFS_BIN" ] || [ ! -f "$RUSTFS_BIN" ]; then
     exit 1
 fi
 
-# Verify code signature
-echo "Verifying rustfs binary..."
-if command -v codesign &> /dev/null; then
-    SIG_INFO=$(codesign -d -r - "$RUSTFS_BIN" 2>&1)
-    
-    # rustfs binaries are NOT code-signed, only hash-designated
-    if echo "$SIG_INFO" | grep -q "designated => cdhash"; then
-        echo "⚠ Binary is unsigned (hash-designated only)"
-        
-        # Extract the hash for record-keeping
-        BINARY_HASH=$(echo "$SIG_INFO" | grep "cdhash" | grep -oE 'H"[^"]*' | sed 's/H"//')
-        echo "  Binary hash: $BINARY_HASH"
-        
-        # Verify against published SHA256SUMS from GitHub releases
-        echo "Verifying against published SHA256SUMS..."
-        GITHUB_RELEASE="https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.12"
-        
-        # Download SHA256SUMS and verify
-        if command -v curl &> /dev/null; then
-            TEMP_SHA=$(mktemp)
-            curl -s -L "$GITHUB_RELEASE/SHA256SUMS" -o "$TEMP_SHA" 2>/dev/null
-            
-            if [ -f "$TEMP_SHA" ] && [ -s "$TEMP_SHA" ]; then
-                # Compute SHA256 of the binary
-                ACTUAL_SHA=$(sha256sum "$RUSTFS_BIN" | awk '{print $1}')
-                
-                # Check if hash appears in the published file
-                if grep -q "$ACTUAL_SHA" "$TEMP_SHA"; then
-                    echo "✓ SHA256 verified against published checksums"
-                    echo "  SHA256: $ACTUAL_SHA"
-                else
-                    echo "❌ ERROR: SHA256 does not match published checksums"
-                    echo "   Binary SHA256: $ACTUAL_SHA"
-                    echo "   Expected: $RUSTFS_SHA256"
-                    rm -f "$TEMP_SHA"
-                    exit 1
-                fi
-            else
-                echo "⚠ Could not download published SHA256SUMS, skipping verification"
-            fi
-            rm -f "$TEMP_SHA"
-        fi
-    else
-        echo "✓ Code signature verified"
-    fi
-else
-    echo "⚠ codesign not available, cannot verify binary signature"
+# Verify binary hash (rustfs is distributed unsigned)
+echo "Verifying rustfs binary hash..."
+if ! verify_rustfs_binary "$RUSTFS_BIN"; then
+    exit 1
 fi
+echo "✓ Binary hash verified"
 
 # Install binary
 mkdir -p "$INSTALL_DIR"
@@ -147,9 +141,16 @@ chmod +x "$INSTALL_DIR/rustfs"
 
 # Verify installation
 if command -v rustfs &> /dev/null; then
-    INSTALLED_VERSION=$(rustfs --version 2>/dev/null || echo "unknown")
-    echo "✓ rustfs installed successfully: $INSTALLED_VERSION"
-    echo "Location: $(command -v rustfs)"
+    INSTALLED_RUSTFS_BIN=$(command -v rustfs)
+    echo "Verifying installed rustfs binary hash..."
+    if verify_rustfs_binary "$INSTALLED_RUSTFS_BIN"; then
+        INSTALLED_VERSION=$(rustfs --version 2>/dev/null || echo "unknown")
+        echo "✓ rustfs installed successfully and verified: $INSTALLED_VERSION"
+        echo "Location: $INSTALLED_RUSTFS_BIN"
+    else
+        echo "❌ Error: Installed rustfs binary failed verification"
+        exit 1
+    fi
 else
     echo "⚠ rustfs installed but not in PATH"
     echo "Add $INSTALL_DIR to your PATH or verify installation"

@@ -1,11 +1,12 @@
 #!/bin/bash
 # Download and verify swiftpkg release from GitHub
 # GitHub: https://github.com/codecarton/swiftpkg
-# Team ID: DPXY7JLK67 (codecarton)
+# Pinned to: 0.1.1 (signed by Team ID DPXY7JLK67)
 
 set -e
 
 REPO="codecarton/swiftpkg"
+SWIFTPKG_VERSION="0.1.1"
 DOWNLOAD_DIR="${1:-.}"
 INSTALL=false
 
