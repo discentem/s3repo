@@ -12,6 +12,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # v4
 
+      # Note: actions/cache's save step only runs when the job succeeds
+      # (post-if: success()), so the cache won't populate until a full green run.
       - name: Cache SwiftPM dependencies
         uses: actions/cache@v6
         with:
