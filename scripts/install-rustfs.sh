@@ -7,7 +7,8 @@ set -e
 
 # Pinned release with SHA256 hash for verification
 RUSTFS_VERSION="1.0.0-beta.12"
-RUSTFS_BINARY_SHA256="f5266eda245fa4dab5acf28bef7bbab6c1da7f3e9575ddc7db803894107e09f5"
+RUSTFS_ZIP_SHA256="f5266eda245fa4dab5acf28bef7bbab6c1da7f3e9575ddc7db803894107e09f5"
+RUSTFS_BINARY_SHA256="0f9dedc7c606fe133ed33cc27464cc64705544e4e1360673f4c5e8a78e931bce"
 
 INSTALL_DIR="${1:-/usr/local/bin}"
 INSTALL=false
@@ -107,10 +108,10 @@ fi
 
 echo "Verifying download integrity..."
 DOWNLOADED_SHA=$(sha256sum "$TEMP_DIR/rustfs.zip" | awk '{print $1}')
-if [ "$DOWNLOADED_SHA" != "$RUSTFS_BINARY_SHA256" ]; then
+if [ "$DOWNLOADED_SHA" != "$RUSTFS_ZIP_SHA256" ]; then
     echo "❌ ERROR: Downloaded file SHA256 does not match pinned hash"
     echo "   Downloaded: $DOWNLOADED_SHA"
-    echo "   Expected:   $RUSTFS_BINARY_SHA256"
+    echo "   Expected:   $RUSTFS_ZIP_SHA256"
     exit 1
 fi
 echo "✓ Download integrity verified"
