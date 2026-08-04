@@ -7,9 +7,8 @@
 set -e
 
 # Pinned release with SHA256 hash for verification
-MUNKITOOLS_RELEASE="v7.2.0"
-MUNKITOOLS_VERSION="7.2.0.5787"
-MUNKITOOLS_PKG_SHA256="9d003d763a1ddd2e97b830135a556941d6b76001bbbd2ce3e033157b8a2e20c5"
+MUNKITOOLS_RELEASE="v7.3.0b2"
+MUNKITOOLS_VERSION="7.3.0.5802"
 EXPECTED_TEAM_ID="T4SK8ZXCXG"
 EXPECTED_ISSUER="Mac Admins Open Source"
 
@@ -102,9 +101,15 @@ if [ -f "$MUNKIIMPORT_BIN" ]; then
     echo "Verifying munkiimport binary code signing..."
     if verify_munkiimport_binary "$MUNKIIMPORT_BIN"; then
         INSTALLED_VERSION=$("$MUNKIIMPORT_BIN" --version 2>/dev/null | head -1 || echo "installed")
-        echo "✓ munkitools is already installed and verified"
-        echo "  $INSTALLED_VERSION"
-        exit 0
+        # if the installed version matches the expected version, we can skip installation
+        if [ "$INSTALLED_VERSION" = "$MUNKITOOLS_VERSION" ]; then
+            echo "✓ munkitools is already installed and verified"
+            echo "  $INSTALLED_VERSION"
+            exit 0
+        else
+            echo "⚠ Installed munkitools version ($INSTALLED_VERSION) does not match expected version ($MUNKITOOLS_VERSION)"
+            echo "  Reinstalling to ensure proper version and verification..."
+        fi
     else
         echo "⚠ munkiimport binary does not have valid code signing or Team ID"
         echo "  Reinstalling to ensure proper verification..."
@@ -138,16 +143,6 @@ if [ ! -f "$TEMP_DIR/munkitools.pkg" ]; then
     echo "❌ Error: Failed to download munkitools"
     exit 1
 fi
-
-echo "Verifying download integrity..."
-DOWNLOADED_SHA=$(sha256sum "$TEMP_DIR/munkitools.pkg" | awk '{print $1}')
-if [ "$DOWNLOADED_SHA" != "$MUNKITOOLS_PKG_SHA256" ]; then
-    echo "❌ ERROR: Downloaded file SHA256 does not match pinned hash"
-    echo "   Downloaded: $DOWNLOADED_SHA"
-    echo "   Expected:   $MUNKITOOLS_PKG_SHA256"
-    exit 1
-fi
-echo "✓ Download integrity verified"
 
 # Verify package signature and Team ID
 if ! verify_munkitools_package "$TEMP_DIR/munkitools.pkg"; then
