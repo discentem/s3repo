@@ -115,10 +115,14 @@ public class S3Repo: Repo {
             pageCount += 1
             logDebug("Fetching page \(pageCount) from S3...")
             
+            // No delimiter: list() must return items recursively (matching
+            // FileRepo's recursive walk), since munkiimport --subdirectory
+            // writes keys nested under the kind prefix (e.g. pkgsinfo/Foo/Foo-1.0).
+            // A delimiter would bucket those under CommonPrefixes instead of
+            // Contents, causing them to be silently dropped.
             let input = ListObjectsV2Input(
                 bucket: bucket,
                 continuationToken: continuationToken,
-                delimiter: "/",
                 prefix: prefix.isEmpty ? nil : prefix
             )
             

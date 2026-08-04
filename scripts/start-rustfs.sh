@@ -8,9 +8,14 @@ STORAGE_DIR="${HOME}/.s3repo-test-buckets"
 ACCESS_KEY="blah"
 SECRET_KEY="blah"
 PORT="9000"
+RUSTFS_BIN="${RUSTFS_BIN:-}"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --bin)
+            RUSTFS_BIN="$2"
+            shift 2
+            ;;
         --dir)
             STORAGE_DIR="$2"
             shift 2
@@ -31,6 +36,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
+            echo "  --bin PATH              Path to rustfs binary (default: /usr/local/bin/rustfs if present, else PATH)"
             echo "  --dir DIR              Storage directory for rustfs (default: ~/.s3repo-test-buckets)"
             echo "  --access-key KEY       S3 access key (default: blah)"
             echo "  --secret-key KEY       S3 secret key (default: blah)"
@@ -45,9 +51,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if rustfs is available
-if ! command -v rustfs &> /dev/null; then
-    echo "❌ Error: rustfs not found in PATH"
+# Resolve rustfs binary.
+# Prefer the pinned install location so tests don't accidentally use an older
+# rustfs earlier in PATH (for example from ~/.cargo/bin).
+if [ -z "$RUSTFS_BIN" ] && [ -x "/usr/local/bin/rustfs" ]; then
+    RUSTFS_BIN="/usr/local/bin/rustfs"
+fi
+
+if [ -z "$RUSTFS_BIN" ]; then
+    if command -v rustfs &> /dev/null; then
+        RUSTFS_BIN=$(command -v rustfs)
+    else
+        echo "❌ Error: rustfs not found in PATH"
+        exit 1
+    fi
+fi
+
+if [ ! -x "$RUSTFS_BIN" ]; then
+    echo "❌ Error: rustfs binary is not executable: $RUSTFS_BIN"
     exit 1
 fi
 
@@ -56,11 +77,12 @@ mkdir -p "$STORAGE_DIR"
 
 # Start rustfs server in background (redirect output to stderr for logging)
 echo "Starting rustfs server..." >&2
+echo "  Binary: $RUSTFS_BIN" >&2
 echo "  Storage: $STORAGE_DIR" >&2
 echo "  Port: $PORT" >&2
 echo "  Endpoint: http://localhost:$PORT" >&2
 
-rustfs server "$STORAGE_DIR" \
+"$RUSTFS_BIN" server "$STORAGE_DIR" \
     --console-enable \
     --access-key "$ACCESS_KEY" \
     --secret-key "$SECRET_KEY" \
