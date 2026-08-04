@@ -7,8 +7,49 @@ set -e
 
 REPO="codecarton/swiftpkg"
 SWIFTPKG_VERSION="0.1.1"
-DOWNLOAD_DIR="${1:-.}"
+EXPECTED_TEAM_ID="DPXY7JLK67"
+EXPECTED_ISSUER="codecarton"
+DOWNLOAD_DIR="/tmp"
 INSTALL=false
+
+# Verify swiftpkg package signature and Team ID
+verify_swiftpkg_package() {
+    local pkg_path="$1"
+    
+    if [ ! -f "$pkg_path" ]; then
+        echo "❌ Error: swiftpkg package not found at $pkg_path"
+        return 1
+    fi
+    
+    echo "Verifying swiftpkg package signature..."
+    if command -v pkgutil &> /dev/null; then
+        if pkgutil --check-signature "$pkg_path" &>/dev/null; then
+            echo "✓ Package signature verified"
+            
+            # Extract and verify Team ID
+            CERT_INFO=$(pkgutil --check-signature "$pkg_path" 2>&1)
+            ACTUAL_TEAM_ID=$(echo "$CERT_INFO" | grep -oE "\(T[A-Z0-9]+\)" | head -1 | tr -d '()')
+            ACTUAL_ISSUER=$(echo "$CERT_INFO" | grep "Developer ID Installer:" | head -1 | sed 's/.*Developer ID Installer: //' | sed 's/ (.*//')
+            
+            if [ "$ACTUAL_TEAM_ID" = "$EXPECTED_TEAM_ID" ]; then
+                echo "✓ Team ID verified: $ACTUAL_TEAM_ID ($ACTUAL_ISSUER)"
+                return 0
+            else
+                echo "❌ ERROR: Team ID mismatch!"
+                echo "   Expected: $EXPECTED_TEAM_ID ($EXPECTED_ISSUER)"
+                echo "   Got: $ACTUAL_TEAM_ID ($ACTUAL_ISSUER)"
+                return 1
+            fi
+        else
+            echo "❌ ERROR: Package signature verification failed"
+            return 1
+        fi
+    else
+        echo "❌ ERROR: pkgutil is not available. Cannot verify package signature and Team ID."
+        echo "   pkgutil is required to verify swiftpkg authenticity."
+        return 1
+    fi
+}
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -91,26 +132,9 @@ fi
 
 # Verify package signature
 echo ""
-echo "Verifying package signature..."
-if pkgutil --check-signature "$PKG_NAME" 2>/dev/null | grep -q "Developer ID"; then
-    echo "✓ Package is signed"
-    
-    # Extract and display signature details
-    CERT_INFO=$(pkgutil --check-signature "$PKG_NAME" 2>/dev/null || true)
-    echo ""
-    echo "Signature Details:"
-    echo "$CERT_INFO" | grep -E "Certificate chain|Developer ID" || echo "  Certificate chain: Valid"
-    
-    # Verify team identifier
-    TEAM_ID=$(echo "$CERT_INFO" | grep -oE "Team ID: [A-Z0-9]+" | cut -d' ' -f3)
-    if [ "$TEAM_ID" = "DPXY7JLK67" ]; then
-        echo "✓ Team ID verified: $TEAM_ID (codecarton)"
-    else
-        echo "⚠️  Team ID: $TEAM_ID (expected DPXY7JLK67)"
-    fi
-else
-    echo "⚠️  Warning: Could not verify package signature"
-    echo "   This may be expected for development releases"
+if ! verify_swiftpkg_package "$PKG_NAME"; then
+    rm -f "$PKG_NAME" "SHA256SUMS"
+    exit 1
 fi
 
 echo ""

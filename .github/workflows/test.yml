@@ -12,6 +12,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # v4
 
+      - name: Install and verify swiftpkg
+        run: |
+          ./scripts/install-swiftpkg.sh --install
+
       - name: Install munkitools
         run: |
           ./scripts/install-munkitools.sh --install
