@@ -79,7 +79,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if munkitools is already installed
-MUNKIIMPORT_BIN="/usr/local/munki/bin/munkiimport"
+MUNKIIMPORT_BIN="/usr/local/munki/munkiimport"
 
 if [ -f "$MUNKIIMPORT_BIN" ]; then
     echo "Found munkiimport at: $MUNKIIMPORT_BIN"
@@ -143,7 +143,7 @@ echo "Installing munkitools (this requires sudo)..."
 sudo installer -pkg "$TEMP_DIR/munkitools.pkg" -target /
 
 # Verify installation - check standard munki location
-MUNKIIMPORT_BIN="/usr/local/munki/bin/munkiimport"
+MUNKIIMPORT_BIN="/usr/local/munki/munkiimport"
 
 if [ ! -f "$MUNKIIMPORT_BIN" ]; then
     echo "❌ Error: munkitools installation verification failed - munkiimport not found at $MUNKIIMPORT_BIN"
