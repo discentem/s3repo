@@ -8,6 +8,7 @@ set -e
 REPO="codecarton/swiftpkg"
 SWIFTPKG_VERSION="0.1.1"
 EXPECTED_ISSUER="Code Carton, LLC"
+EXPECTED_TEAM_ID="DPXY7JLK67"
 DOWNLOAD_DIR="/tmp"
 INSTALL=false
 
@@ -25,25 +26,35 @@ verify_swiftpkg_package() {
         if pkgutil --check-signature "$pkg_path" &>/dev/null; then
             echo "✓ Package signature verified"
             
-            # Extract and verify issuer
+            # Extract and verify issuer and Team ID
             CERT_INFO=$(pkgutil --check-signature "$pkg_path" 2>&1)
-            ACTUAL_ISSUER=$(echo "$CERT_INFO" | grep "Developer ID Installer:" | head -1 | sed 's/.*Developer ID Installer: //' | sed 's/ (.*//')
             
-            if [ "$ACTUAL_ISSUER" = "$EXPECTED_ISSUER" ]; then
-                echo "✓ Issuer verified: $ACTUAL_ISSUER"
-                return 0
-            else
+            # Extract issuer name and Team ID from "Developer ID Installer: Name (TEAMID)" format
+            ACTUAL_ISSUER=$(echo "$CERT_INFO" | grep "Developer ID Installer:" | head -1 | sed 's/.*Developer ID Installer: //' | sed 's/ (.*//')
+            ACTUAL_TEAM_ID=$(echo "$CERT_INFO" | grep "Developer ID Installer:" | head -1 | grep -oE '\([A-Z0-9]+\)' | tr -d '()')
+            
+            if [ "$ACTUAL_ISSUER" != "$EXPECTED_ISSUER" ]; then
                 echo "❌ ERROR: Issuer mismatch!"
                 echo "   Expected: $EXPECTED_ISSUER"
                 echo "   Got: $ACTUAL_ISSUER"
                 return 1
             fi
+            
+            if [ "$ACTUAL_TEAM_ID" != "$EXPECTED_TEAM_ID" ]; then
+                echo "❌ ERROR: Team ID mismatch!"
+                echo "   Expected: $EXPECTED_TEAM_ID"
+                echo "   Got: $ACTUAL_TEAM_ID"
+                return 1
+            fi
+            
+            echo "✓ Issuer verified: $ACTUAL_ISSUER ($ACTUAL_TEAM_ID)"
+            return 0
         else
             echo "❌ ERROR: Package signature verification failed"
             return 1
         fi
     else
-        echo "❌ ERROR: pkgutil is not available. Cannot verify package signature and issuer."
+        echo "❌ ERROR: pkgutil is not available. Cannot verify package signature."
         echo "   pkgutil is required to verify swiftpkg authenticity."
         return 1
     fi
