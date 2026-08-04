@@ -6,6 +6,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# /usr/local/munki isn't on PATH by default (e.g. on GitHub Actions runners)
+MUNKIIMPORT_BIN="/usr/local/munki/munkiimport"
+
 # Parse arguments
 APP_PATH="${PROJECT_ROOT}/S3RepoPackage/build/S3RepoPlugin.pkg"
 REPO_URL="http://localhost:9000/munki-repo"
@@ -46,6 +49,11 @@ if [ ! -e "$APP_PATH" ]; then
     exit 1
 fi
 
+if [ ! -x "$MUNKIIMPORT_BIN" ]; then
+    echo "❌ Error: $MUNKIIMPORT_BIN not found or not executable"
+    exit 1
+fi
+
 echo "Running munkiimport test with:"
 echo "  App: $APP_PATH"
 echo "  Repo URL: $REPO_URL"
@@ -62,7 +70,7 @@ echo "=== Running munkiimport Test ==="
 
 AWS_ACCESS_KEY_ID="blah" \
 AWS_SECRET_ACCESS_KEY="blah" \
-munkiimport "$APP_PATH" \
+"$MUNKIIMPORT_BIN" "$APP_PATH" \
     -n \
     --subdirectory "S3RepoPlugin" \
     --plugin "$PLUGIN" \
