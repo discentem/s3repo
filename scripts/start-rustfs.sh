@@ -54,29 +54,30 @@ fi
 # Create storage directory
 mkdir -p "$STORAGE_DIR"
 
-# Start rustfs server in background
-echo "Starting rustfs server..."
-echo "  Storage: $STORAGE_DIR"
-echo "  Port: $PORT"
-echo "  Endpoint: http://localhost:$PORT"
+# Start rustfs server in background (redirect output to stderr for logging)
+echo "Starting rustfs server..." >&2
+echo "  Storage: $STORAGE_DIR" >&2
+echo "  Port: $PORT" >&2
+echo "  Endpoint: http://localhost:$PORT" >&2
 
 rustfs server "$STORAGE_DIR" \
     --console-enable \
-    --access-key="$ACCESS_KEY" \
-    --secret-key="$SECRET_KEY" \
-    --port="$PORT" &
+    --access-key "$ACCESS_KEY" \
+    --secret-key "$SECRET_KEY" \
+    --address ":$PORT" &> /tmp/rustfs.log &
 
 RUSTFS_PID=$!
 
 # Wait for server to start
-echo "Waiting for rustfs server to be ready..."
 sleep 2
 
 # Check if server is running
 if ! kill -0 "$RUSTFS_PID" 2>/dev/null; then
-    echo "❌ Error: rustfs server failed to start"
+    echo "❌ Error: rustfs server failed to start" >&2
+    cat /tmp/rustfs.log >&2
     exit 1
 fi
 
-echo "✓ rustfs server started (PID: $RUSTFS_PID)"
+echo "✓ rustfs server started (PID: $RUSTFS_PID)" >&2
+# Only output the PID to stdout so it can be captured
 echo "$RUSTFS_PID"

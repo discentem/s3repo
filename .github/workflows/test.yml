@@ -12,6 +12,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # v4
 
+      - name: Cache SwiftPM dependencies
+        uses: actions/cache@v6
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
       - name: Install and verify swiftpkg
         run: |
           ./scripts/install-swiftpkg.sh --install
@@ -24,13 +32,13 @@ jobs:
         run: |
           ./scripts/install-rustfs.sh --install
 
+      - name: Install AWS CLI
+        run: |
+          ./scripts/install-awscli.sh
+
       - name: Build S3Repo plugin package
         run: |
           ./scripts/build-plugin-package.sh
-
-      - name: Build MunkiRepoInit tool
-        run: |
-          ./scripts/build-munki-repo-init.sh
 
       - name: Install S3Repo Munki repo plugin package
         run: |
@@ -45,7 +53,7 @@ jobs:
 
       - name: Create S3 bucket for munki repository
         run: |
-          ./scripts/create-s3-bucket.sh \
+          ./scripts/setup-s3-repo.sh \
             --bucket "munki-repo" \
             --endpoint "http://localhost:9000" \
             --region "us-east-1"

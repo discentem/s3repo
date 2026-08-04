@@ -15,10 +15,6 @@ let package = Package(
             name: "S3Repo",
             type: .dynamic,
             targets: ["S3Repo"]
-        ),
-        .executable(
-            name: "MunkiRepoInit",
-            targets: ["MunkiRepoInitTool"]
         )
     ],
     dependencies: [
@@ -40,24 +36,6 @@ let package = Package(
                 .product(name: "AWSS3", package: "aws-sdk-swift")
             ],
             path: "Sources/S3Repo"
-        ),
-        .target(
-            name: "MunkiRepoInit",
-            dependencies: [
-                .target(name: "AWSConfig"),
-                .product(name: "AWSS3", package: "aws-sdk-swift")
-            ],
-            path: "Sources/MunkiRepoInit",
-            sources: ["MunkiRepoInit.swift"]
-        ),
-        .executableTarget(
-            name: "MunkiRepoInitTool",
-            dependencies: [
-                .target(name: "MunkiRepoInit"),
-                .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ],
-            path: "Sources/MunkiRepoInit",
-            sources: ["main.swift"]
         )
     ]
 )

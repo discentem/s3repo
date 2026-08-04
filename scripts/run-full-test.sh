@@ -27,32 +27,26 @@ echo -e "${BLUE}=== S3Repo Full End-to-End Test ===${NC}"
 echo ""
 
 # Step 1: Build plugin package (includes Swift build)
-echo -e "${BLUE}[1/7] Building plugin package...${NC}"
+echo -e "${BLUE}[1/6] Building plugin package...${NC}"
 cd "$PROJECT_ROOT"
 sh "$SCRIPT_DIR/build-plugin-package.sh" 2>&1 | tail -10
 echo -e "${GREEN}✓ Plugin package built${NC}"
 echo ""
 
-# Step 2: Build MunkiRepoInit tool
-echo -e "${BLUE}[2/7] Building MunkiRepoInit tool...${NC}"
-sh "$SCRIPT_DIR/build-munki-repo-init.sh" 2>&1 | tail -5
-echo -e "${GREEN}✓ MunkiRepoInit tool built${NC}"
-echo ""
-
-# Step 3: Install plugin package
-echo -e "${BLUE}[3/7] Installing plugin package...${NC}"
+# Step 2: Install plugin package
+echo -e "${BLUE}[2/6] Installing plugin package...${NC}"
 sudo sh "$SCRIPT_DIR/install-plugin-package.sh" 2>&1 | tail -5
 echo -e "${GREEN}✓ Plugin installed${NC}"
 echo ""
 
-# Step 4: Start rustfs server
-echo -e "${BLUE}[4/7] Starting rustfs S3 server...${NC}"
+# Step 3: Start rustfs server
+echo -e "${BLUE}[3/6] Starting rustfs S3 server...${NC}"
 RUSTFS_PID=$(sh "$SCRIPT_DIR/start-rustfs.sh" | tail -1)
 echo -e "${GREEN}✓ Rustfs server started (PID: $RUSTFS_PID)${NC}"
 echo ""
 
-# Step 5: Create S3 bucket
-echo -e "${BLUE}[5/7] Creating S3 bucket for munki repository...${NC}"
+# Step 4: Create S3 bucket
+echo -e "${BLUE}[4/6] Creating S3 bucket for munki repository...${NC}"
 sh "$SCRIPT_DIR/create-s3-bucket.sh" \
     --bucket "munki-repo" \
     --endpoint "http://localhost:9000" \
@@ -60,8 +54,8 @@ sh "$SCRIPT_DIR/create-s3-bucket.sh" \
 echo -e "${GREEN}✓ S3 bucket created/verified${NC}"
 echo ""
 
-# Step 6: Run end-to-end test
-echo -e "${BLUE}[6/7] Running munkiimport test...${NC}"
+# Step 5: Run end-to-end test
+echo -e "${BLUE}[5/6] Running munkiimport test...${NC}"
 sh "$SCRIPT_DIR/test_munkiimport.sh" \
     --repo-url "http://localhost:9000/munki-repo" \
     --plugin "S3Repo" 2>&1
@@ -69,8 +63,8 @@ sh "$SCRIPT_DIR/test_munkiimport.sh" \
 EXIT_CODE=$?
 echo ""
 
-# Step 7: Cleanup
-echo -e "${BLUE}[7/7] Cleaning up...${NC}"
+# Step 6: Cleanup
+echo -e "${BLUE}[6/6] Cleaning up...${NC}"
 cleanup
 echo -e "${GREEN}✓ Cleanup complete${NC}"
 echo ""

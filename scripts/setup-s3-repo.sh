@@ -1,5 +1,6 @@
 #!/bin/bash
-# Create or verify S3 bucket for munki repository using AWS CLI
+# Setup S3-compatible munki repository structure using AWS CLI
+# Creates bucket and directory structure: catalogs/, manifests/, pkgs/, pkgsinfo/
 
 set -e
 
@@ -35,7 +36,7 @@ while [[ $# -gt 0 ]]; do
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
-            echo "Creates S3 bucket and munki repository directory structure using AWS CLI"
+            echo "Creates S3 bucket and munki repository directory structure"
             echo ""
             echo "Options:"
             echo "  --bucket NAME          S3 bucket name (default: munki-repo)"
@@ -55,7 +56,7 @@ done
 
 # Verify AWS CLI is available
 if ! command -v aws &> /dev/null; then
-    echo "❌ Error: AWS CLI not found. Please install it using scripts/install-awscli.sh"
+    echo "❌ Error: AWS CLI not found. Please install it."
     exit 1
 fi
 
@@ -67,19 +68,19 @@ if AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
    --endpoint-url "$S3_ENDPOINT" \
    --region "$S3_REGION" &>/dev/null 2>&1; then
     echo "✓ Bucket '$BUCKET_NAME' already exists"
-    exit 0
+else
+    # Create bucket
+    echo "Creating S3 bucket: $BUCKET_NAME"
+    AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
+    AWS_SECRET_ACCESS_KEY="$SECRET_KEY" \
+    aws s3 mb "s3://$BUCKET_NAME" \
+        --endpoint-url "$S3_ENDPOINT" \
+        --region "$S3_REGION" || {
+        echo "❌ Failed to create bucket"
+        exit 1
+    }
+    echo "✓ Bucket created: $BUCKET_NAME"
 fi
-
-# Create bucket
-echo "Creating S3 bucket: $BUCKET_NAME"
-AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
-AWS_SECRET_ACCESS_KEY="$SECRET_KEY" \
-aws s3 mb "s3://$BUCKET_NAME" \
-    --endpoint-url "$S3_ENDPOINT" \
-    --region "$S3_REGION" || {
-    echo "❌ Failed to create bucket"
-    exit 1
-}
 
 # Create directory structure by uploading .keep marker files
 DIRECTORIES=("catalogs" "manifests" "pkgs" "pkgsinfo")
@@ -109,5 +110,4 @@ for dir in "${DIRECTORIES[@]}"; do
     fi
 done
 
-echo "✓ S3 bucket '$BUCKET_NAME' initialized/verified"
-
+echo "✓ S3 repository '$BUCKET_NAME' fully initialized"
