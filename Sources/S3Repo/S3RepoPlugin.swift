@@ -85,9 +85,12 @@ public class S3Repo: Repo {
         
         if let endpoint = resolvedEndpoint {
             config.endpoint = endpoint
-            // Note: AWS SDK for Swift doesn't expose path-style URL configuration directly
-            // The addressing style is determined by the Smithy protocol and service model
-            logDebug("Endpoint configured: \(endpoint)")
+            // Force path-style addressing (bucket in path, not subdomain) for local
+            // S3-compatible endpoints (rustfs, MinIO, etc.) - matches AWSConfig.createS3Client().
+            if endpoint.lowercased().hasPrefix("http://") || endpoint.lowercased().hasPrefix("https://") {
+                config.forcePathStyle = true
+            }
+            logDebug("Endpoint configured: \(endpoint), forcePathStyle=\(config.forcePathStyle ?? false)")
         }
         
         logDebug("Creating S3Client...")
