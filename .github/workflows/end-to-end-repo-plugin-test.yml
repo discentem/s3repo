@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  end-to-end-repo-plugin-test:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
