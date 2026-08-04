@@ -1,14 +1,13 @@
 #!/bin/bash
 # Download and verify swiftpkg release from GitHub
 # GitHub: https://github.com/codecarton/swiftpkg
-# Pinned to: 0.1.1 (signed by Team ID DPXY7JLK67)
+# Pinned to: 0.1.1 (signed by Code Carton, LLC)
 
 set -e
 
 REPO="codecarton/swiftpkg"
 SWIFTPKG_VERSION="0.1.1"
-EXPECTED_TEAM_ID="DPXY7JLK67"
-EXPECTED_ISSUER="codecarton"
+EXPECTED_ISSUER="Code Carton, LLC"
 DOWNLOAD_DIR="/tmp"
 INSTALL=false
 
@@ -26,18 +25,17 @@ verify_swiftpkg_package() {
         if pkgutil --check-signature "$pkg_path" &>/dev/null; then
             echo "✓ Package signature verified"
             
-            # Extract and verify Team ID
+            # Extract and verify issuer
             CERT_INFO=$(pkgutil --check-signature "$pkg_path" 2>&1)
-            ACTUAL_TEAM_ID=$(echo "$CERT_INFO" | grep -oE "\(T[A-Z0-9]+\)" | head -1 | tr -d '()')
             ACTUAL_ISSUER=$(echo "$CERT_INFO" | grep "Developer ID Installer:" | head -1 | sed 's/.*Developer ID Installer: //' | sed 's/ (.*//')
             
-            if [ "$ACTUAL_TEAM_ID" = "$EXPECTED_TEAM_ID" ]; then
-                echo "✓ Team ID verified: $ACTUAL_TEAM_ID ($ACTUAL_ISSUER)"
+            if [ "$ACTUAL_ISSUER" = "$EXPECTED_ISSUER" ]; then
+                echo "✓ Issuer verified: $ACTUAL_ISSUER"
                 return 0
             else
-                echo "❌ ERROR: Team ID mismatch!"
-                echo "   Expected: $EXPECTED_TEAM_ID ($EXPECTED_ISSUER)"
-                echo "   Got: $ACTUAL_TEAM_ID ($ACTUAL_ISSUER)"
+                echo "❌ ERROR: Issuer mismatch!"
+                echo "   Expected: $EXPECTED_ISSUER"
+                echo "   Got: $ACTUAL_ISSUER"
                 return 1
             fi
         else
@@ -45,7 +43,7 @@ verify_swiftpkg_package() {
             return 1
         fi
     else
-        echo "❌ ERROR: pkgutil is not available. Cannot verify package signature and Team ID."
+        echo "❌ ERROR: pkgutil is not available. Cannot verify package signature and issuer."
         echo "   pkgutil is required to verify swiftpkg authenticity."
         return 1
     fi
