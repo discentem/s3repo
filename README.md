@@ -4,6 +4,37 @@ This project provides a [repo plugin](https://github.com/munki/munki/blob/main/c
 
 ## How to test this repo plugin
 
+### Automated end-to-end testing
+
+This project includes an automated testing pipeline that handles building, packaging, installing, and testing the plugin with a local S3-compatible server.
+
+Run the full test suite:
+
+```shell
+# Keep rustfs running after tests (useful for debugging)
+sh scripts/run-full-test.sh true /path/to/test-app.dmg
+
+# Or without keeping rustfs alive
+sh scripts/run-full-test.sh false /path/to/test-app.dmg
+```
+
+This wrapper script:
+1. Builds the plugin from source
+2. Packages it as a .pkg installer
+3. Installs it system-wide
+4. Runs end-to-end tests with `munkiimport` using a local rustfs S3-compatible server
+5. Cleans up resources (unless you specify to keep rustfs alive)
+
+For more details, see:
+- [`scripts/run-full-test.sh`](scripts/run-full-test.sh) - Main test orchestrator
+- [`scripts/test_munkiimport.sh`](scripts/test_munkiimport.sh) - Individual test runner with timeout and logging
+- [`scripts/build-plugin-package.sh`](scripts/build-plugin-package.sh) - Plugin build and packaging
+- [`scripts/install-plugin-package.sh`](scripts/install-plugin-package.sh) - Plugin installation
+
+### Manual testing
+
+For manual testing without the automated wrapper:
+
 1. Either create a real S3 bucket or run a S3-compatible service and create a bucket there. Note down the access key and secret key that you set.
 
     For example, with Rustfs:
