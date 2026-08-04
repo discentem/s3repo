@@ -6,7 +6,7 @@
 set -e
 
 REPO="codecarton/swiftpkg"
-SWIFTPKG_VERSION="0.1.1"
+SWIFTPKG_RELEASE="v0.3.1"
 EXPECTED_ISSUER="Code Carton, LLC"
 EXPECTED_TEAM_ID="DPXY7JLK67"
 DOWNLOAD_DIR="/tmp"
@@ -90,18 +90,10 @@ done
 # Create download directory
 mkdir -p "$DOWNLOAD_DIR"
 
-echo "Fetching latest swiftpkg release from GitHub..."
-
-# Get latest release info from GitHub API
-RELEASE_INFO=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
-RELEASE_TAG=$(echo "$RELEASE_INFO" | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
-
-if [ -z "$RELEASE_TAG" ]; then
-    echo "❌ Error: Could not fetch latest release from GitHub"
-    exit 1
-fi
-
-echo "✓ Found release: $RELEASE_TAG"
+# Pinned to an exact release tag (not "latest") to avoid the unauthenticated
+# GitHub API rate limit (60 req/hour, shared across CI runner IPs).
+RELEASE_TAG="$SWIFTPKG_RELEASE"
+echo "Using pinned release: $RELEASE_TAG"
 
 # Determine which package to download (CLI on macOS 13+)
 if [[ $(sw_vers -productVersion) == 1[3-9]* ]] || [[ $(sw_vers -productVersion) == [2-9][0-9]* ]]; then
