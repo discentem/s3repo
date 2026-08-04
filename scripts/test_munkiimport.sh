@@ -58,9 +58,9 @@ echo "=== Running munkiimport Test ==="
 # --subdirectory: where to upload in repo
 # --plugin: which plugin to use
 # -vvv: very verbose output
-# timeout after 30 seconds
+# timeout after 30 seconds (macOS has no GNU `timeout`, so implement it manually)
 
-timeout 30 bash -c 'AWS_ACCESS_KEY_ID="blah" \
+AWS_ACCESS_KEY_ID="blah" \
 AWS_SECRET_ACCESS_KEY="blah" \
 munkiimport "$APP_PATH" \
     -n \
@@ -68,15 +68,27 @@ munkiimport "$APP_PATH" \
     --plugin "$PLUGIN" \
     --repo-url "$REPO_URL" \
     --extract-icon \
-    -vvv 2>&1' || {
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-        echo "ERROR: munkiimport timed out after 30 seconds"
-    fi
-    exit $EXIT_CODE
-}
+    -vvv 2>&1 &
+MUNKIIMPORT_PID=$!
 
-EXIT_CODE=$?
+(
+    sleep 30
+    if kill -0 "$MUNKIIMPORT_PID" 2>/dev/null; then
+        echo "ERROR: munkiimport timed out after 30 seconds"
+        kill -TERM "$MUNKIIMPORT_PID" 2>/dev/null
+    fi
+) &
+WATCHER_PID=$!
+
+if wait "$MUNKIIMPORT_PID"; then
+    EXIT_CODE=0
+else
+    EXIT_CODE=$?
+fi
+
+kill "$WATCHER_PID" 2>/dev/null
+wait "$WATCHER_PID" 2>/dev/null
+
 echo ""
 echo "munkiimport exited with code: $EXIT_CODE"
 exit $EXIT_CODE

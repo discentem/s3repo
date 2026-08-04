@@ -81,21 +81,36 @@ done
 # Check if munkitools is already installed
 MUNKIIMPORT_BIN="/usr/local/munki/munkiimport"
 
+# Verify an installed binary's signature AND Team ID (--verify alone only
+# proves the binary matches its own signature, even an ad-hoc one; it does
+# not prove who signed it).
+verify_munkiimport_binary() {
+    local bin_path="$1"
+
+    if ! codesign --verify --strict "$bin_path" &>/dev/null; then
+        return 1
+    fi
+
+    local team_id
+    team_id=$(codesign -dvv "$bin_path" 2>&1 | grep "^TeamIdentifier=" | cut -d= -f2)
+    [ "$team_id" = "$EXPECTED_TEAM_ID" ]
+}
+
 if [ -f "$MUNKIIMPORT_BIN" ]; then
     echo "Found munkiimport at: $MUNKIIMPORT_BIN"
-    
-    # Verify the installed binary has code signing
+
     echo "Verifying munkiimport binary code signing..."
-    if codesign -v -strict "$MUNKIIMPORT_BIN" &>/dev/null; then
+    if verify_munkiimport_binary "$MUNKIIMPORT_BIN"; then
         INSTALLED_VERSION=$("$MUNKIIMPORT_BIN" --version 2>/dev/null | head -1 || echo "installed")
         echo "✓ munkitools is already installed and verified"
         echo "  $INSTALLED_VERSION"
         exit 0
     else
-        echo "⚠ munkiimport binary does not have valid code signing"
+        echo "⚠ munkiimport binary does not have valid code signing or Team ID"
         echo "  Reinstalling to ensure proper verification..."
     fi
 fi
+
 
 echo "Checking for munkitools availability..."
 
@@ -151,10 +166,11 @@ if [ ! -f "$MUNKIIMPORT_BIN" ]; then
 fi
 
 echo "Verifying installed munkiimport binary code signing..."
-if codesign -v -strict "$MUNKIIMPORT_BIN" &>/dev/null; then
+if verify_munkiimport_binary "$MUNKIIMPORT_BIN"; then
     INSTALLED_VERSION=$("$MUNKIIMPORT_BIN" --version 2>/dev/null | head -1 || echo "installed")
     echo "✓ munkitools installed successfully and verified"
     echo "  $INSTALLED_VERSION"
 else
-    echo "⚠ munkiimport installed but binary does not have valid code signing"
+    echo "❌ Error: installed munkiimport binary failed signature/Team ID verification"
+    exit 1
 fi
