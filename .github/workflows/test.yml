@@ -10,7 +10,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652a34574319c12dd29  # v4.1.7
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # v4
 
       - name: Install munkitools
         run: |
