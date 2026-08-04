@@ -79,14 +79,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if munkitools is already installed
-if command -v munkiimport &> /dev/null; then
-    MUNKIIMPORT_BIN=$(command -v munkiimport)
+MUNKIIMPORT_BIN="/usr/local/munki/bin/munkiimport"
+
+if [ -f "$MUNKIIMPORT_BIN" ]; then
     echo "Found munkiimport at: $MUNKIIMPORT_BIN"
     
     # Verify the installed binary has code signing
     echo "Verifying munkiimport binary code signing..."
     if codesign -v -strict "$MUNKIIMPORT_BIN" &>/dev/null; then
-        INSTALLED_VERSION=$(munkiimport --version 2>/dev/null | head -1 || echo "installed")
+        INSTALLED_VERSION=$("$MUNKIIMPORT_BIN" --version 2>/dev/null | head -1 || echo "installed")
         echo "✓ munkitools is already installed and verified"
         echo "  $INSTALLED_VERSION"
         exit 0
@@ -141,18 +142,19 @@ fi
 echo "Installing munkitools (this requires sudo)..."
 sudo installer -pkg "$TEMP_DIR/munkitools.pkg" -target /
 
-# Verify installation
-if command -v munkiimport &> /dev/null; then
-    MUNKIIMPORT_BIN=$(command -v munkiimport)
-    echo "Verifying installed munkiimport binary code signing..."
-    if codesign -v -strict "$MUNKIIMPORT_BIN" &>/dev/null; then
-        INSTALLED_VERSION=$(munkiimport --version 2>/dev/null | head -1 || echo "installed")
-        echo "✓ munkitools installed successfully and verified"
-        echo "  $INSTALLED_VERSION"
-    else
-        echo "⚠ munkiimport installed but binary does not have valid code signing"
-    fi
-else
-    echo "❌ Error: munkitools installation verification failed"
+# Verify installation - check standard munki location
+MUNKIIMPORT_BIN="/usr/local/munki/bin/munkiimport"
+
+if [ ! -f "$MUNKIIMPORT_BIN" ]; then
+    echo "❌ Error: munkitools installation verification failed - munkiimport not found at $MUNKIIMPORT_BIN"
     exit 1
+fi
+
+echo "Verifying installed munkiimport binary code signing..."
+if codesign -v -strict "$MUNKIIMPORT_BIN" &>/dev/null; then
+    INSTALLED_VERSION=$("$MUNKIIMPORT_BIN" --version 2>/dev/null | head -1 || echo "installed")
+    echo "✓ munkitools installed successfully and verified"
+    echo "  $INSTALLED_VERSION"
+else
+    echo "⚠ munkiimport installed but binary does not have valid code signing"
 fi
