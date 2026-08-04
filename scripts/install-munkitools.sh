@@ -7,7 +7,8 @@
 set -e
 
 # Pinned release with SHA256 hash for verification
-MUNKITOOLS_VERSION="v7.2.0.5787"
+MUNKITOOLS_RELEASE="v7.2.0"
+MUNKITOOLS_VERSION="7.2.0.5787"
 MUNKITOOLS_PKG_SHA256="0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
 EXPECTED_TEAM_ID="T4SK8ZXCXG"
 EXPECTED_ISSUER="Mac Admins Open Source"
@@ -98,9 +99,9 @@ fi
 echo "Checking for munkitools availability..."
 
 # Use pinned release version
-DOWNLOAD_URL="https://github.com/munki/munki/releases/download/${MUNKITOOLS_VERSION}/munkitools-${MUNKITOOLS_VERSION}.pkg"
+DOWNLOAD_URL="https://github.com/munki/munki/releases/download/${MUNKITOOLS_RELEASE}/munkitools-${MUNKITOOLS_VERSION}.pkg"
 
-echo "Found munkitools release: $MUNKITOOLS_VERSION"
+echo "Found munkitools release: $MUNKITOOLS_RELEASE (package version $MUNKITOOLS_VERSION)"
 echo "Download URL: $DOWNLOAD_URL"
 
 if [ "$INSTALL" = false ]; then
