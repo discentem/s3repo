@@ -94,8 +94,8 @@ else
     EXIT_CODE=$?
 fi
 
-kill "$WATCHER_PID" 2>/dev/null
-wait "$WATCHER_PID" 2>/dev/null
+kill "$WATCHER_PID" 2>/dev/null || true
+wait "$WATCHER_PID" 2>/dev/null || true
 
 echo ""
 echo "munkiimport exited with code: $EXIT_CODE"
