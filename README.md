@@ -1,22 +1,21 @@
 # S3Repo
 
-This project provides a [repo plugin](https://github.com/munki/munki/blob/main/code/cli/munki/munkiimport/munkiimport.swift#L190) for Munki 7 that uses the S3 API to 'talk' to the repo.
+This project provides a [repo plugin](https://github.com/munki/munki/blob/main/code/cli/munki/munkiimport/munkiimport.swift#L190) for Munki 7 to work with an S3 backend.
 
-## How to test this repo plugin
+## Tests
 
 ### Automated end-to-end testing
 
-This project includes an automated testing pipeline that handles building, packaging, installing, and testing the plugin with a local S3-compatible server.
+This project includes an automated testing pipeline in Github Actions (see [.github/workflows/end-to-end-repo-plugin-test.yml](.github/workflows/end-to-end-repo-plugin-test.yml)) that handles building, packaging, installing, and testing the plugin with a local S3-compatible server.
 
-This wrapper script:
+This pipeline:
 1. Builds the plugin from source
 2. Packages it as a .pkg installer
 3. Installs it system-wide
-4. Builds the MunkiRepoInit tool
 5. Starts a rustfs S3-compatible server
 6. Creates the munki-repo S3 bucket
 7. Runs end-to-end tests with `munkiimport` testing the built S3RepoPlugin.pkg
-8. Cleans up resources
+8. Cleans up all the resources
 
 For more details on individual scripts, see [scripts](scripts/).
 
@@ -27,5 +26,5 @@ For more details on individual scripts, see [scripts](scripts/).
 
 ### Repo Plugins
 
-Repo plugins are used by Munkitools, such as [Munkiimport](https://github.com/munki/munki/blob/main/code/cli/munki/munkiimport/munkiimport.swift#L190), when an administrator is interacting with the Munki repo. 
+Repo plugins allow the Munki command-line admin tools (specifically munkiimport, makecatalogs, iconimporter, manifestutil) to be able to work with a repo that's not just a locally-available filesystem.
 
