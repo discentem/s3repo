@@ -82,32 +82,11 @@ else
     echo "✓ Bucket created: $BUCKET_NAME"
 fi
 
-# Create directory structure by uploading .keep marker files
-DIRECTORIES=("catalogs" "manifests" "pkgs" "pkgsinfo")
-for dir in "${DIRECTORIES[@]}"; do
-    KEY="$dir/.keep"
-    
-    # Check if .keep already exists
-    if AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
-       AWS_SECRET_ACCESS_KEY="$SECRET_KEY" \
-       aws s3api head-object \
-           --bucket "$BUCKET_NAME" \
-           --key "$KEY" \
-           --endpoint-url "$S3_ENDPOINT" \
-           --region "$S3_REGION" &>/dev/null 2>&1; then
-        echo "✓ Directory exists: $dir/"
-    else
-        # Create empty .keep file
-        echo -n "" | AWS_ACCESS_KEY_ID="$ACCESS_KEY" \
-        AWS_SECRET_ACCESS_KEY="$SECRET_KEY" \
-        aws s3 cp - "s3://$BUCKET_NAME/$KEY" \
-            --endpoint-url "$S3_ENDPOINT" \
-            --region "$S3_REGION" || {
-            echo "❌ Failed to create directory marker: $dir/.keep"
-            exit 1
-        }
-        echo "✓ Created directory: $dir/"
-    fi
-done
+# Directory structure (catalogs/, manifests/, pkgs/, pkgsinfo/) needs no
+# explicit creation: S3 has no real directories, so writing a nested key like
+# pkgsinfo/foo.plist works immediately with no parent "directory" present.
+# We used to pre-create ".keep" marker objects here, but list() would then
+# return ".keep" as if it were a real pkginfo/catalog entry, breaking
+# makecatalogs (it can't parse ".keep" as a pkginfo file).
 
 echo "✓ S3 repository '$BUCKET_NAME' fully initialized"

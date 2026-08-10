@@ -1,7 +1,8 @@
 #!/bin/bash
 # Download and verify swiftpkg release from GitHub
 # GitHub: https://github.com/codecarton/swiftpkg
-# Pinned to: 0.1.1 (signed by Code Carton, LLC)
+# Pinned to: v0.3.1 CLI package
+# Signed by: Team ID DPXY7JLK67 (Code Carton, LLC)
 
 set -e
 
@@ -10,6 +11,7 @@ SWIFTPKG_RELEASE="v0.3.1"
 EXPECTED_ISSUER="Code Carton, LLC"
 EXPECTED_TEAM_ID="DPXY7JLK67"
 DOWNLOAD_DIR="/tmp"
+INSTALLED_BIN_PATH="/usr/local/bin/swiftpkg"
 INSTALL=false
 
 # Verify swiftpkg package signature and Team ID
@@ -60,6 +62,39 @@ verify_swiftpkg_package() {
     fi
 }
 
+verify_swiftpkg_binary() {
+    local bin_path="$1"
+
+    if [ ! -f "$bin_path" ]; then
+        echo "❌ Error: swiftpkg binary not found at $bin_path"
+        return 1
+    fi
+
+    if ! command -v codesign &> /dev/null; then
+        echo "❌ ERROR: codesign is not available. Cannot verify installed swiftpkg binary."
+        return 1
+    fi
+
+    # --verify alone only proves the binary matches its embedded signature.
+    # Also check Team ID to prove who signed it.
+    if ! codesign --verify --strict "$bin_path" &>/dev/null; then
+        echo "❌ ERROR: Installed swiftpkg binary signature verification failed"
+        return 1
+    fi
+
+    local team_id
+    team_id=$(codesign -dvv "$bin_path" 2>&1 | grep "^TeamIdentifier=" | cut -d= -f2)
+    if [ "$team_id" != "$EXPECTED_TEAM_ID" ]; then
+        echo "❌ ERROR: Installed swiftpkg binary Team ID mismatch!"
+        echo "   Expected: $EXPECTED_TEAM_ID"
+        echo "   Got: ${team_id:-not set}"
+        return 1
+    fi
+
+    echo "✓ swiftpkg binary signature verified (Team ID: $team_id)"
+    return 0
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -75,7 +110,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --dir DIR         Download directory (default: current directory)"
+            echo "  --dir DIR         Download directory (default: /tmp)"
             echo "  --install         Install after verification"
             echo "  --help            Show this help message"
             exit 0
@@ -86,6 +121,25 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Check if swiftpkg is already installed at the known location
+if [ -f "$INSTALLED_BIN_PATH" ]; then
+    echo "Found existing swiftpkg at: $INSTALLED_BIN_PATH"
+
+    echo "Verifying installed swiftpkg binary code signing..."
+    if verify_swiftpkg_binary "$INSTALLED_BIN_PATH"; then
+        INSTALLED_VERSION=$("$INSTALLED_BIN_PATH" --version 2>/dev/null || echo "installed")
+        echo "✓ swiftpkg is already installed and verified: $INSTALLED_VERSION"
+        exit 0
+    fi
+
+    if [ "$INSTALL" = false ]; then
+        echo "❌ ERROR: Installed swiftpkg binary failed verification"
+        exit 1
+    fi
+
+    echo "⚠ Existing swiftpkg binary failed verification, reinstalling..."
+fi
 
 # Create download directory
 mkdir -p "$DOWNLOAD_DIR"
@@ -145,10 +199,19 @@ echo ""
 if [ "$INSTALL" = true ]; then
     echo "Installing swiftpkg..."
     sudo installer -pkg "$PKG_NAME" -target /
-    echo "✓ Installation complete"
-    echo ""
-    echo "Verify installation:"
-    echo "  swiftpkg --version"
+
+    if [ ! -f "$INSTALLED_BIN_PATH" ]; then
+        echo "❌ Error: swiftpkg installation verification failed - binary not found at $INSTALLED_BIN_PATH"
+        exit 1
+    fi
+
+    echo "Verifying installed swiftpkg binary code signing..."
+    if ! verify_swiftpkg_binary "$INSTALLED_BIN_PATH"; then
+        exit 1
+    fi
+
+    INSTALLED_VERSION=$("$INSTALLED_BIN_PATH" --version 2>/dev/null || echo "installed")
+    echo "✓ swiftpkg installed successfully and verified: $INSTALLED_VERSION"
 else
     echo "To install:"
     echo "  sudo installer -pkg $PKG_NAME -target /"
