@@ -34,7 +34,7 @@ KEEP_SERVER_RUNNING=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-installs)
-            SKIP_INSTALLS=true
+            SKIP_INSTALLS=false
             shift
             ;;
         --keep-server)

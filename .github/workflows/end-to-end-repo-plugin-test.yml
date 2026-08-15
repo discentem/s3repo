@@ -23,57 +23,9 @@ jobs:
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
-
-      - name: Install and verify swiftpkg
+      - name: Run end-to-end munkiimport and repoclean tests
         run: |
-          ./scripts/install-swiftpkg.sh --install
-
-      - name: Install munkitools
-        run: |
-          ./scripts/install-munkitools.sh --install
-
-      - name: Install rustfs
-        run: |
-          ./scripts/install-rustfs.sh --install
-
-      - name: Install AWS CLI
-        run: |
-          ./scripts/install-awscli.sh
-
-      - name: Build S3Repo plugin package
-        run: |
-          ./scripts/build-plugin-package.sh
-
-      - name: Save SwiftPM dependencies
-        if: always()
-        uses: actions/cache/save@v6
-        with:
-          path: .build
-          key: ${{ steps.cache-spm.outputs.cache-primary-key }}
-
-      - name: Install S3Repo Munki repo plugin package
-        run: |
-          sudo ./scripts/install-plugin-package.sh
-
-      - name: Start rustfs S3 server
-        run: |
-          RUSTFS_PID=$(./scripts/start-rustfs.sh)
-          echo "RUSTFS_PID=$RUSTFS_PID" >> $GITHUB_ENV
-          # Give the server time to stabilize
-          sleep 2
-
-      - name: Create S3 bucket for munki repository
-        run: |
-          ./scripts/setup-s3-repo.sh \
-            --bucket "munki-repo" \
-            --endpoint "http://localhost:9000" \
-            --region "us-east-1"
-
-      - name: Run munkiimport end-to-end test
-        run: |
-          ./scripts/test_munkiimport.sh \
-            --repo-url "http://localhost:9000/munki-repo" \
-            --plugin "S3Repo"
+          ./scripts/run-all-tests.sh
 
       - name: Cleanup
         if: always()

@@ -75,6 +75,7 @@ AWS_SECRET_ACCESS_KEY="blah" \
     --subdirectory "S3RepoPlugin" \
     --plugin "$PLUGIN" \
     --repo-url "$REPO_URL" \
+    --rebuild-catalogs \
     --extract-icon \
     -vvv 2>&1 &
 MUNKIIMPORT_PID=$!
