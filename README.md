@@ -26,5 +26,5 @@ For more details on individual scripts, see [scripts](scripts/).
 
 ### Repo Plugins
 
-Repo plugins allow the Munki command-line admin tools (specifically munkiimport, makecatalogs, iconimporter, manifestutil) to be able to work with a repo that's not just a locally-available filesystem.
+[Repo plugins](https://github.com/munki/munki/wiki/Repo-Plugins) allow the Munki command-line admin tools (specifically munkiimport, makecatalogs, iconimporter, manifestutil) to be able to work with a repo that's not just a locally-available filesystem.
 
